@@ -201,21 +201,24 @@ function hasQuotedContentNeighbor(lines: MarkdownSourceLine[], index: number): b
   return parsed !== null && parsed.content.trim() !== ''
 }
 
-function restoreBlankBlockquoteParagraphs(markdown: MarkdownBody): MarkdownBody {
-  const pendingLines = markdown.split('\n')
+export function restoreBlankBlockquoteParagraphs(markdown: MarkdownBody): MarkdownBody {
+  const lines = markdown.split('\n').values()
   const restored: string[] = []
+  let current = lines.next()
 
-  while (pendingLines.length > 0) {
-    const line = pendingLines.shift() ?? ''
+  while (!current.done) {
+    const line = current.value
+    const next = lines.next()
     const parsed = parseBlockquoteSourceLine(line)
-    if (!isBlankSerializedBlockquoteGap(parsed, restored.at(-1), pendingLines.at(0))) {
+    if (!isBlankSerializedBlockquoteGap(parsed, restored.at(-1), next.value)) {
       restored.push(line)
+      current = next
       continue
     }
 
     restored.pop()
     restored.push(parsed.marker.trimEnd())
-    pendingLines.shift()
+    current = lines.next()
   }
 
   return restored.join('\n')
